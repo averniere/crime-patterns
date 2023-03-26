@@ -70,7 +70,7 @@ for s in Sites:
     Z[i][j] = len(Ngbr[i][j])
 
 '''Matrix of the number of criminals in the site'''
-N_crim = (gamma*dt)/(1-np.exp(-A_avg*dt))
+#N_crim = (gamma*dt)/(1-np.exp(-A_avg*dt))
 n_avg = (gamma*dt)/(1-np.exp(-A_avg[0][0]*dt))
 
 '''Creation of a matrix that indicates the number of criminals at each site'''
@@ -91,19 +91,22 @@ def q (s, n):
     return A[n_x][n_y]/sum([A[S[0]][S[1]] for S in Ngbr[s_x][s_y]])
 
 
+'''Criminal loop'''
+
 P = 1-np.exp(-A*dt)
 h = 0
 C = [] # List of the number of criminals on the grid at each iteration
 T = []
 Added = [] # List of the number of criminals added to the grid at each iteration
+
 # Criminal loop
 while t <= end:
-    E=np.zeros((L,L))
+    E=np.zeros((L,L)) # Matrix of the number of burglary events that occured between t and t+dt
     N_t = copy.deepcopy(N)
-    added = 0
+    added = 0 # Number of criminals added to the lattice  
     for s in Sites:
         i,j = s[0],s[1]
-        if N[i][j] > 0:
+        if N[i][j] > 0: # If there are criminals at this site
             nb_criminals_s = int(N[i][j])
             for criminal in range(nb_criminals_s):
                 r = rd.random()
@@ -113,7 +116,7 @@ while t <= end:
                     N_t[i][j] = N[i][j]-1 
                     # Increment E
                     E[i][j]+=1 
-                # Move to another site  
+                # Do not burgle and move to another site  
                 else:
                     s_neighbors = Ngbr[i][j]
                     prob_neighbors = [q(s,n) for n in s_neighbors]
@@ -122,18 +125,20 @@ while t <= end:
                     s_chosen=s_neighbors[n]
                     N_t[s_chosen[0]][s_chosen[1]]+=1
                     N_t[i][j]= N[i][j]-1
+        # Potential generation of burglers at this site 
         c = rd.random()
         if c < gamma :
             N_t[i][j]+=1 
             added += 1
-    #Computation of the discrete spatial Laplacian operator applied to B
+    # End of the criminal loop
+    # Computation of the discrete spatial Laplacian operator applied to B
     delta_B = np.zeros((L,L))
     for s in Sites:
         i,j= s[0],s[1]
         delta_B[i][j]=(sum([B[S[0]][S[1]] for S in Ngbr[i][j]])-Z[i][j]*B[i][j])
-    #Computation of B(t+dt) via Eq.2.6
+    # Computation of B(t+dt) via Eq.2.6
     B=(B+eta*(delta_B)/Z)*(1-w*dt)+theta*E
-    #Update of the variables
+    # Update of the variables
     A = A_0+B
     P = 1-np.exp(-A*dt)
     N = N_t
